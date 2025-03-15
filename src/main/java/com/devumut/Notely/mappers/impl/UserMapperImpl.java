@@ -5,7 +5,9 @@ import com.devumut.Notely.domain.entities.UserEntity;
 import com.devumut.Notely.mappers.Mapper;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class UserMapperImpl implements Mapper<UserEntity, UserDto> {
 
     private final ModelMapper mapper;
