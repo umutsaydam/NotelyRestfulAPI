@@ -4,9 +4,7 @@ import com.devumut.Notely.domain.dto.UserDto;
 import com.devumut.Notely.domain.entities.UserEntity;
 import com.devumut.Notely.mappers.Mapper;
 import com.devumut.Notely.services.UserService;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,6 +39,18 @@ public class UsersController {
         } catch (RuntimeException e) {
             // e.getMessage()
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping(path = "/login")
+    public ResponseEntity<?> loginUser(@RequestBody UserDto userDto){
+        UserEntity userEntity = userMapper.mapFrom(userDto);
+        try{
+            UserEntity loginUser = service.loginUser(userEntity);
+            return new ResponseEntity<>(userMapper.mapTo(loginUser), HttpStatus.OK);
+        }catch (Exception e){
+            // e.getMessage();
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
     }
 
