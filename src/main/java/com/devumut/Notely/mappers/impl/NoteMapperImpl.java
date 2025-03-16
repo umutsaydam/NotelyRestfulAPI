@@ -1,14 +1,14 @@
 package com.devumut.Notely.mappers.impl;
 
 import com.devumut.Notely.domain.dto.NotesDto;
-import com.devumut.Notely.domain.entities.NotesEntity;
+import com.devumut.Notely.domain.entities.NoteEntity;
 import com.devumut.Notely.mappers.Mapper;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class NoteMapperImpl implements Mapper<NotesEntity, NotesDto> {
+public class NoteMapperImpl implements Mapper<NoteEntity, NotesDto> {
 
     public final ModelMapper mapper;
 
@@ -18,12 +18,12 @@ public class NoteMapperImpl implements Mapper<NotesEntity, NotesDto> {
     }
 
     @Override
-    public NotesDto mapTo(NotesEntity notesEntity) {
-        return mapper.map(notesEntity, NotesDto.class);
+    public NotesDto mapTo(NoteEntity noteEntity) {
+        return mapper.map(noteEntity, NotesDto.class);
     }
 
     @Override
-    public NotesEntity mapFrom(NotesDto notesDto) {
-        return mapper.map(notesDto, NotesEntity.class);
+    public NoteEntity mapFrom(NotesDto notesDto) {
+        return mapper.map(notesDto, NoteEntity.class);
     }
 }

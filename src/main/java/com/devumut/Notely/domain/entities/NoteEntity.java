@@ -14,7 +14,7 @@ import java.util.UUID;
 @Builder
 @Entity
 @Table(name = "notes")
-public class NotesEntity {
+public class NoteEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -23,7 +23,7 @@ public class NotesEntity {
     @Column(name = "note_title")
     private String noteTitle;
 
-    @Column(name = "note_content")
+    @Column(name = "note_content", nullable = false)
     private String noteContent;
 
     @ManyToOne
