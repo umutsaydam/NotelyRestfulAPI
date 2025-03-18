@@ -2,15 +2,17 @@ package com.devumut.Notely.controllers;
 
 import com.devumut.Notely.domain.dto.UserDto;
 import com.devumut.Notely.domain.entities.UserEntity;
+import com.devumut.Notely.jwt.JwtUtil;
 import com.devumut.Notely.mappers.Mapper;
+import com.devumut.Notely.services.TokenService;
 import com.devumut.Notely.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController()
 @RequestMapping("/users")
@@ -18,13 +20,16 @@ public class UsersController {
 
     private final Mapper<UserEntity, UserDto> userMapper;
     private final UserService service;
+    private final JwtUtil jwtUtil;
+    private final TokenService tokenService;
 
     @Autowired
-    public UsersController(Mapper<UserEntity, UserDto> userMapper, UserService service) {
+    public UsersController(Mapper<UserEntity, UserDto> userMapper, UserService service, JwtUtil jwtUtil, TokenService tokenService) {
         this.userMapper = userMapper;
         this.service = service;
+        this.jwtUtil = jwtUtil;
+        this.tokenService = tokenService;
     }
-
 
     @PostMapping(path = "/create")
     public ResponseEntity<?> createUser(@RequestBody UserDto userDto) {
@@ -43,15 +48,31 @@ public class UsersController {
     }
 
     @PostMapping(path = "/login")
-    public ResponseEntity<?> loginUser(@RequestBody UserDto userDto){
+    public ResponseEntity<?> loginUser(@RequestBody UserDto userDto) {
         UserEntity userEntity = userMapper.mapFrom(userDto);
-        try{
+        try {
             UserEntity loginUser = service.loginUser(userEntity);
-            return new ResponseEntity<>(userMapper.mapTo(loginUser), HttpStatus.OK);
-        }catch (Exception e){
+            String token = jwtUtil.generateToken(loginUser.getUserId(), loginUser.getUsername());
+            tokenService.removeTokensByUserId(loginUser.getUserId());
+            tokenService.saveToken(loginUser.getUserId(), token);
+            Map<String, String> response = new HashMap<>();
+            response.put("token", token);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
             // e.getMessage();
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
     }
 
+    @PostMapping(path = "/logout")
+    public ResponseEntity<?> logoutUser(@RequestHeader("Authorization") String token) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        if (!tokenService.isTokenValid(token)) {
+            return new ResponseEntity<>("Invalid token", HttpStatus.BAD_REQUEST);
+        }
+        tokenService.removeToken(token);
+        return new ResponseEntity<>("Logged out successfully", HttpStatus.OK);
+    }
 }

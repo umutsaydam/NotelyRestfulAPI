@@ -2,8 +2,11 @@ package com.devumut.Notely.controllers;
 
 import com.devumut.Notely.domain.dto.NotesDto;
 import com.devumut.Notely.domain.entities.NoteEntity;
+import com.devumut.Notely.domain.entities.UserEntity;
+import com.devumut.Notely.jwt.JwtUtil;
 import com.devumut.Notely.mappers.Mapper;
 import com.devumut.Notely.services.NoteService;
+import com.devumut.Notely.services.TokenService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,42 +18,88 @@ import java.util.UUID;
 @RequestMapping("/notes")
 public class NotesController {
 
-    private final NoteService service;
+    private final NoteService noteService;
     private final Mapper<NoteEntity, NotesDto> noteMapper;
+    private final JwtUtil jwtUtil;
+    private final TokenService tokenService;
 
-    public NotesController(NoteService service, Mapper<NoteEntity, NotesDto> noteMapper) {
-        this.service = service;
+    public NotesController(NoteService noteService, Mapper<NoteEntity, NotesDto> noteMapper, JwtUtil jwtUtil, TokenService tokenService) {
+        this.noteService = noteService;
         this.noteMapper = noteMapper;
+        this.jwtUtil = jwtUtil;
+        this.tokenService = tokenService;
     }
 
     @PostMapping(path = "/create")
-    public ResponseEntity<NotesDto> createNote(@RequestBody NotesDto notesDto) {
+    public ResponseEntity<NotesDto> createNote(
+            @RequestHeader("Authorization") String token,
+            @RequestBody NotesDto notesDto
+    ) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        if (!tokenService.isTokenValid(token)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
         if (notesDto.getNoteContent().isEmpty()) {
-            // note content can not be null
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        UUID userId = jwtUtil.extractUserId(token);
+        UserEntity userRef = new UserEntity();
+        userRef.setUserId(userId);
+        if (notesDto.getNoteContent() == null || notesDto.getNoteContent().trim().isEmpty()) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         NoteEntity noteEntity = noteMapper.mapFrom(notesDto);
-        NoteEntity savedNoteEntity = service.createNote(noteEntity);
+        noteEntity.setUser(userRef);
+        NoteEntity savedNoteEntity = noteService.createNote(noteEntity);
+        savedNoteEntity.setUser(null);
         return new ResponseEntity<>(noteMapper.mapTo(savedNoteEntity), HttpStatus.CREATED);
     }
 
     @GetMapping(path = "/read/{note_id}")
-    public ResponseEntity<NotesDto> readNote(@PathVariable("note_id") UUID noteId) {
-        Optional<NoteEntity> optionalNote = service.readNote(noteId);
-        return optionalNote.map(noteEntity -> new ResponseEntity<>(noteMapper.mapTo(noteEntity), HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ResponseEntity<NotesDto> readNote(
+            @RequestHeader("Authorization") String token,
+            @PathVariable("note_id") UUID noteId
+    ) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        if (!tokenService.isTokenValid(token)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        Optional<NoteEntity> optionalNote = noteService.readNote(noteId);
+        return optionalNote.map(noteEntity ->
+                new ResponseEntity<>(noteMapper.mapTo(noteEntity), HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping(path = "/delete/{note_id}")
-    public ResponseEntity<HttpStatus> deleteNoteById(@PathVariable("note_id") UUID noteId) {
-        service.deleteNote(noteId);
+    public ResponseEntity<HttpStatus> deleteNoteById(
+            @RequestHeader("Authorization") String token,
+            @PathVariable("note_id") UUID noteId) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        if (!tokenService.isTokenValid(token)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        noteService.deleteNote(noteId);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @PatchMapping(path = "/update")
-    public ResponseEntity<NotesDto> updateNote(@RequestBody NotesDto notesDto) {
+    public ResponseEntity<NotesDto> updateNote(
+            @RequestHeader("Authorization") String token,
+            @RequestBody NotesDto notesDto) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        if (!tokenService.isTokenValid(token)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
         NoteEntity noteEntity = noteMapper.mapFrom(notesDto);
         try {
-            NoteEntity updatedNote = service.updateNote(noteEntity);
+            NoteEntity updatedNote = noteService.updateNote(noteEntity);
             return new ResponseEntity<>(noteMapper.mapTo(updatedNote), HttpStatus.OK);
         } catch (RuntimeException e) {
             // e.getMessage();

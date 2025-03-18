@@ -31,8 +31,6 @@ public class NoteServiceImpl implements NoteService {
     public void deleteNote(UUID noteId) {
         repository.deleteById(noteId);
     }
-
-    @Override
     public NoteEntity updateNote(NoteEntity updatedNote) {
         return repository.findById(updatedNote.getNoteId()).map(existingNote -> {
             Optional.ofNullable(updatedNote.getNoteTitle()).ifPresent(existingNote::setNoteTitle);
