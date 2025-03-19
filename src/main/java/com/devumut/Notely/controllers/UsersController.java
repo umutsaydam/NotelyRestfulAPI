@@ -33,8 +33,8 @@ public class UsersController {
 
     @PostMapping(path = "/create")
     public ResponseEntity<?> createUser(@RequestBody UserDto userDto) {
-        if (userDto.getUsername().length() > 30) {
-            return new ResponseEntity<>("Kullanıcı adı 30 karakteri aşamaz.", HttpStatus.BAD_REQUEST);
+        if (userDto.getUsername().length() > 30 || userDto.getPassword().length() > 30) {
+            return new ResponseEntity<>("Kullanıcı adı ve parola 30 karakteri aşamaz.", HttpStatus.BAD_REQUEST);
         }
         UserEntity newUser = userMapper.mapFrom(userDto);
         try {
