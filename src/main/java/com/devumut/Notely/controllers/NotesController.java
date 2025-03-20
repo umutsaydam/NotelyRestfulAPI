@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -71,6 +72,20 @@ public class NotesController {
         Optional<NoteEntity> optionalNote = noteService.readNote(noteId);
         return optionalNote.map(noteEntity ->
                 new ResponseEntity<>(noteMapper.mapTo(noteEntity), HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping(path = "/read/all_notes")
+    public ResponseEntity<List<NotesDto>> readAllNotes(@RequestHeader("Authorization") String token) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        if (!tokenService.isTokenValid(token)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        UUID userId = jwtUtil.extractUserId(token);
+        List<NoteEntity> noteEntities = noteService.getAllNotes(userId);
+        List<NotesDto> notesDtos = noteEntities.stream().map(noteMapper::mapTo).toList();
+        return new ResponseEntity<>(notesDtos, HttpStatus.OK);
     }
 
     @DeleteMapping(path = "/delete/{note_id}")

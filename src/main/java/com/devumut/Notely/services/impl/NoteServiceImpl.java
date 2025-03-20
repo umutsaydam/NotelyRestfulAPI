@@ -5,6 +5,7 @@ import com.devumut.Notely.repositories.NoteRepository;
 import com.devumut.Notely.services.NoteService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,11 +32,17 @@ public class NoteServiceImpl implements NoteService {
     public void deleteNote(UUID noteId) {
         repository.deleteById(noteId);
     }
+
     public NoteEntity updateNote(NoteEntity updatedNote) {
         return repository.findById(updatedNote.getNoteId()).map(existingNote -> {
             Optional.ofNullable(updatedNote.getNoteTitle()).ifPresent(existingNote::setNoteTitle);
             Optional.ofNullable(updatedNote.getNoteContent()).ifPresent(existingNote::setNoteContent);
             return repository.save(existingNote);
         }).orElseThrow(() -> new RuntimeException("Note does not exist."));
+    }
+
+    @Override
+    public List<NoteEntity> getAllNotes(UUID userId) {
+        return repository.getAllNotesByUserId(userId);
     }
 }
